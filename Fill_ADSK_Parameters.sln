@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35013.160
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fill_ADSK_Parameters", "Fill_ADSK_Parameters\Fill_ADSK_Parameters.csproj", "{FA848517-57A4-482A-A468-3E67FC877F04}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FA848517-57A4-482A-A468-3E67FC877F04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA848517-57A4-482A-A468-3E67FC877F04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA848517-57A4-482A-A468-3E67FC877F04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA848517-57A4-482A-A468-3E67FC877F04}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8F132523-0599-41DE-8859-5197AD7CF29C}
+	EndGlobalSection
+EndGlobal
