@@ -1,6 +1,5 @@
 ﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.DB.Plumbing;
 using System;
 using System.Text;
 using System.Linq;
@@ -11,23 +10,94 @@ namespace Fill_ADSK_Parameters
 
     public static class ADSKFunctions
     {
+        private static readonly BuiltInCategory[] AdskCategories =
+        {
+            BuiltInCategory.OST_PipeAccessory,
+            BuiltInCategory.OST_PipeFitting,
+            BuiltInCategory.OST_PipeCurves,
+            BuiltInCategory.OST_MechanicalEquipment,
+            BuiltInCategory.OST_DuctCurves,
+            BuiltInCategory.OST_DuctAccessory,
+            BuiltInCategory.OST_DuctFitting,
+            BuiltInCategory.OST_PipeInsulations
+        };
+
+        private static readonly Dictionary<BuiltInCategory, string> GroupingValues =
+        new Dictionary<BuiltInCategory, string>
+        {
+            { BuiltInCategory.OST_PipeAccessory, "2" },
+            { BuiltInCategory.OST_PipeCurves, "3" },
+            { BuiltInCategory.OST_PipeFitting, "4" },
+            { BuiltInCategory.OST_MechanicalEquipment, "1" },
+            { BuiltInCategory.OST_DuctCurves, "3" },
+            { BuiltInCategory.OST_DuctAccessory, "2" },
+            { BuiltInCategory.OST_DuctFitting, "4" },
+            { BuiltInCategory.OST_PipeInsulations, "5" }
+        };
+
+        private static readonly Dictionary<string, int> PositionRules =
+        new Dictionary<string, int>
+        {
+            { "Насос циркуляционный", 2 },
+            { "Клапан предохранительный", 3 },
+            { "Предохранительный клапан", 3 },
+            { "Двухходовой регулирующий", 4 },
+            { "Двухходовой седельный", 4 },
+            { "Клапан регулятор перепада", 4 },
+            { "Клапан электромагнитный", 4 },
+            { "Клапан балансировочный", 5 },
+            { "Клапан перепада", 6 },
+            { "Клапан обратный", 7 },
+            { "Обратный клапан", 7 },
+            { "Гибкая антивибрационная", 10 },
+            { "Гибкая вставка", 10 },
+            { "Бак расширительный", 11 },
+            { "Узел учета тепла", 13 },
+            { "Кран для манометра", 17 },
+            { "Шаровый кран", 18 },
+            { "Шаровой кран", 18 },
+            { "Кран шаровой", 18 },
+            { "Кран шаровый", 18 },
+            { "Затвор дисковый", 19 },
+            { "Труба стальная", 20 },
+            { "Отвод 90", 21 },
+            { "Отвод 45", 22 },
+            { "Опора скользящая", 30 },
+            { "Опора подвижная", 30 },
+            { "Хомут трубный", 30 },
+            { "Опора неподвижная", 31 },
+            { "Теплоизоляция трубопровода", 37 },
+            { "Цилиндры кашированные фольгой", 37 },
+            { "Крепеж теплоизоляции трубопровода", 38 },
+            { "Крепеж теплоизоляции", 33 },
+            { "Лента для теплоизоляции", 34 },
+            { "Антикоррозийная защита", 36 },
+            { "Теплообменник", 1 },
+            { "Насос", 2 },
+            { "Клапан регулирующий", 4 },
+            { "Грязевик", 8 },
+            { "Фильтр", 9 },
+            { "Вибровставка", 10 },
+            { "АУПД", 12 },
+            { "Расходомер", 14 },
+            { "Счетчик", 14 },
+            { "Термометр", 15 },
+            { "Манометр", 16 },
+            { "Тройник", 23 },
+            { "Фланец", 24 },
+            { "Переход", 25 },
+            { "Заглушка", 26 },
+            { "Хомут", 30 },
+            { "Теплоизоляция", 32 },
+            { "Воздухоотводчик", 35 },
+            { "Колонна", 40 },
+            { "Балка", 40 },
+            { "Уголок", 40 }
+        };
 
         public static void FillADSKGrouping(Document doc)
         {
-
-            BuiltInCategory[] categories =
-            {
-
-BuiltInCategory.OST_PipeAccessory,
-BuiltInCategory.OST_PipeFitting,
-BuiltInCategory.OST_PipeCurves,
-BuiltInCategory.OST_MechanicalEquipment,
-BuiltInCategory.OST_DuctCurves,
-BuiltInCategory.OST_DuctAccessory,
-BuiltInCategory.OST_DuctFitting,
-BuiltInCategory.OST_PipeInsulations
-
-};
+            int updated = 0;
 
             using (Transaction t =
             new Transaction(doc, "ADSK Группирование"))
@@ -35,8 +105,10 @@ BuiltInCategory.OST_PipeInsulations
 
                 t.Start();
 
-                foreach (BuiltInCategory bic in categories)
+                foreach (BuiltInCategory bic in AdskCategories)
                 {
+                    if (!GroupingValues.TryGetValue(bic, out string value))
+                        continue;
 
                     FilteredElementCollector collector =
                     new FilteredElementCollector(doc)
@@ -46,30 +118,8 @@ BuiltInCategory.OST_PipeInsulations
                     foreach (Element el in collector)
                     {
 
-                        Parameter groupParam =
-                        el.LookupParameter("ADSK_Группирование");
-
-                        if (groupParam == null || groupParam.IsReadOnly)
-                            continue;
-
-                        string value = "";
-
-                        switch (bic)
-                        {
-
-                            case BuiltInCategory.OST_PipeAccessory:
-                                value = "2"; break;
-
-                            case BuiltInCategory.OST_PipeCurves:
-                                value = "3"; break;
-
-                            case BuiltInCategory.OST_PipeFitting:
-                                value = "4"; break;
-
-                        }
-
-                        if (!string.IsNullOrEmpty(value))
-                            groupParam.Set(value);
+                        if (HelperFunctions.TrySetParameter(el, HelperFunctions.AdskGrouping, value))
+                            updated++;
 
                     }
 
@@ -79,99 +129,24 @@ BuiltInCategory.OST_PipeInsulations
 
             }
 
+            TaskDialog.Show("Готово", $"Заполнено ADSK_Группирование: {updated}");
+
         }
 
         public static void ADSK_Позиция_Fill(Document doc)
         {
-
-            Dictionary<string, int> dict =
-            new Dictionary<string, int>()
-            {
-
-                {"Теплообменник", 1},
-                {"Насос", 2},
-                {"Насос циркуляционный", 2},
-
-                {"Клапан предохранительный", 3},
-                {"Предохранительный клапан", 3},
-
-                {"Клапан регулирующий", 4},
-                {"Двухходовой седельный", 4},
-                {"Двухходовой регулирующий", 4},
-
-
-                {"Клапан регулятор перепада", 4},
-
-                {"Клапан электромагнитный", 4},
-
-                {"Клапан балансировочный", 5},
-                {"Клапан перепада", 6},
-                {"Клапан обратный", 7},
-                {"обратный клапан ", 7},
-
-                {"Грязевик", 8},
-                {"Фильтр", 9},
-                {"Вибровставка", 10},
-                {"Гибкая вставка", 10},
-                {"Гибкая антивибрационная", 10},
-
-                {"Бак расширительный", 11},
-                {"АУПД", 12},
-                {"Узел учета тепла", 13},
-                {"Расходомер", 14},
-                {"Счетчик", 14},
-
-                {"Термометр", 15},
-                {"Манометр", 16},
-                {"Кран для манометра", 17},
-                {"Шаровый кран", 18},
-                {"шаровой кран", 18},
-                {"Кран шаровой", 18},
-                {"кран шаровый", 18},
-
-                {"Затвор дисковый", 19},
-                {"Труба стальная", 20},
-                {"Отвод 90", 21},
-                {"Отвод 45", 22},
-                {"Тройник", 23},
-                {"Фланец", 24},
-                {"Переход", 25},
-                {"Заглушка", 26},
-                {"Опора скользящая", 30},
-                {"Опора подвижная", 30},
-                {"Хомут", 30},
-                {"Хомут трубный", 30},
-
-                {"Опора неподвижная", 31},
-                {"Теплоизоляция", 32},
-                {"Крепеж теплоизоляции", 33},
-                {"Лента для теплоизоляции", 34},
-                {"Воздухоотводчик", 35},
-                {"Антикоррозийная защита", 36},
-                {"Теплоизоляция трубопровода", 37},
-                {"Цилиндры кашированные фольгой", 37},
-                {"Крепеж теплоизоляции трубопровода", 38},
-                {"Колонна", 40},
-                {"Балка", 40},
-                {"Уголок", 40},
-
-            };
-
-            FilteredElementCollector collector =
-            new FilteredElementCollector(doc)
-            .WhereElementIsNotElementType();
+            int updated = 0;
 
             using (Transaction t =
             new Transaction(doc, "Заполнение ADSK Позиция"))
             {
 
                 t.Start();
-
-                foreach (Element el in collector)
+                foreach (Element el in GetAdskElements(doc))
                 {
 
                     Parameter posParam =
-                    el.LookupParameter("ADSK_Позиция");
+                    el.LookupParameter(HelperFunctions.AdskPosition);
 
                     if (posParam == null || posParam.IsReadOnly)
                         continue;
@@ -182,7 +157,7 @@ BuiltInCategory.OST_PipeInsulations
                     if (string.IsNullOrEmpty(name))
                         continue;
 
-                    foreach (var kvp in dict)
+                    foreach (var kvp in PositionRules.OrderByDescending(x => x.Key.Length))
                     {
 
                         if (name.IndexOf(
@@ -191,6 +166,7 @@ BuiltInCategory.OST_PipeInsulations
                         {
 
                             posParam.Set(kvp.Value.ToString());
+                            updated++;
                             break;
 
                         }
@@ -203,23 +179,21 @@ BuiltInCategory.OST_PipeInsulations
 
             }
 
+            TaskDialog.Show("Готово", $"Заполнено ADSK_Позиция: {updated}");
+
         }
 
         public static void RenumberGroupedPositions(Document doc)
         {
 
-            FilteredElementCollector collector =
-            new FilteredElementCollector(doc)
-            .WhereElementIsNotElementType();
-
             Dictionary<string, List<Element>> groups =
             new Dictionary<string, List<Element>>();
 
-            foreach (Element el in collector)
+            foreach (Element el in GetAdskElements(doc))
             {
 
                 Parameter posParam =
-                el.LookupParameter("ADSK_Позиция");
+                el.LookupParameter(HelperFunctions.AdskPosition);
 
                 if (posParam == null) continue;
 
@@ -243,7 +217,9 @@ BuiltInCategory.OST_PipeInsulations
 
                 t.Start();
 
-                foreach (var kvp in groups)
+                int updated = 0;
+
+                foreach (var kvp in groups.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
                 {
 
                     string basePos = kvp.Key;
@@ -256,7 +232,11 @@ BuiltInCategory.OST_PipeInsulations
                         Name = HelperFunctions.GetName(e),
                         Mark = HelperFunctions.GetMark(e)
 
-                    }).ToList();
+                    })
+                    .OrderBy(g => g.Key.Name, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(g => g.Key.Mark, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(g => g.Min(e => e.Id.Value))
+                    .ToList();
 
                     int index = 1;
 
@@ -270,11 +250,14 @@ BuiltInCategory.OST_PipeInsulations
                         {
 
                             Parameter posParam =
-                            el.LookupParameter("ADSK_Позиция");
+                            el.LookupParameter(HelperFunctions.AdskPosition);
 
                             if (posParam != null &&
                             !posParam.IsReadOnly)
+                            {
                                 posParam.Set(newPos);
+                                updated++;
+                            }
 
                         }
 
@@ -285,6 +268,8 @@ BuiltInCategory.OST_PipeInsulations
                 }
 
                 t.Commit();
+
+                TaskDialog.Show("Готово", $"Перенумеровано элементов: {updated}");
 
             }
 
@@ -322,7 +307,7 @@ BuiltInCategory.OST_PipeInsulations
 
 
                         Parameter parentComm =
-                        parent.LookupParameter("Comments");
+                        parent.LookupParameter(HelperFunctions.Comments);
 
                         if (parentComm == null)
                             continue;
@@ -336,7 +321,7 @@ BuiltInCategory.OST_PipeInsulations
 
 
                         Parameter childComm =
-                        fi.LookupParameter("Comments");
+                        fi.LookupParameter(HelperFunctions.Comments);
 
                         if (childComm != null &&
                         !childComm.IsReadOnly)
@@ -352,7 +337,7 @@ BuiltInCategory.OST_PipeInsulations
                     {
 
                         errors.AppendLine(
-                        $"Эл.{fi.Id.IntegerValue}: {ex.Message}");
+                        $"Эл.{fi.Id.Value}: {ex.Message}");
 
                     }
 
@@ -371,6 +356,19 @@ BuiltInCategory.OST_PipeInsulations
             else
                 TaskDialog.Show("Готово", msg);
 
+        }
+
+        private static IEnumerable<Element> GetAdskElements(Document doc)
+        {
+            foreach (BuiltInCategory bic in AdskCategories)
+            {
+                foreach (Element el in new FilteredElementCollector(doc)
+                    .OfCategory(bic)
+                    .WhereElementIsNotElementType())
+                {
+                    yield return el;
+                }
+            }
         }
     }
 }

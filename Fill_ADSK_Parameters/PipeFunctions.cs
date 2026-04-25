@@ -3,7 +3,6 @@ using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
 using System;
 using System.Text;
-using System.Linq;
 
 namespace Fill_ADSK_Parameters
 {
@@ -11,7 +10,7 @@ namespace Fill_ADSK_Parameters
     public static class PipeFunctions
     {
 
-        public static void pipesLenght(Document doc)
+        public static void FillPipesLength(Document doc)
         {
 
             FilteredElementCollector collector =
@@ -19,6 +18,8 @@ namespace Fill_ADSK_Parameters
             .OfClass(typeof(Pipe));
 
             StringBuilder errors = new StringBuilder();
+            int quantityUpdated = 0;
+            int nameUpdated = 0;
 
             using (Transaction t =
             new Transaction(doc, "Заполнение ADSK параметров для труб"))
@@ -33,7 +34,7 @@ namespace Fill_ADSK_Parameters
                     {
 
                         Parameter qParam =
-                        pipe.LookupParameter("ADSK_Количество");
+                        pipe.LookupParameter(HelperFunctions.AdskQuantity);
 
                         if (qParam != null && !qParam.IsReadOnly)
                         {
@@ -48,12 +49,13 @@ namespace Fill_ADSK_Parameters
                             UnitTypeId.Meters);
 
                             qParam.Set(Math.Round(lengthMeters, 2));
+                            quantityUpdated++;
 
                         }
 
 
                         Parameter nameParam =
-                        pipe.LookupParameter("ADSK_Наименование");
+                        pipe.LookupParameter(HelperFunctions.AdskName);
 
                         if (nameParam != null && !nameParam.IsReadOnly)
                         {
@@ -70,7 +72,7 @@ namespace Fill_ADSK_Parameters
                             BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
 
                             if (typeCommentsParam != null)
-                                typeComment = typeCommentsParam.AsString();
+                                typeComment = typeCommentsParam.AsString() ?? "";
 
                             double outerDiameterMm =
                             UnitUtils.ConvertFromInternalUnits(
@@ -78,10 +80,15 @@ namespace Fill_ADSK_Parameters
                             BuiltInParameter.RBS_PIPE_OUTER_DIAMETER).AsDouble(),
                             UnitTypeId.Millimeters);
 
+                            Parameter innerDiameterParam =
+                            pipe.get_Parameter(BuiltInParameter.RBS_PIPE_INNER_DIAM_PARAM);
+
+                            if (innerDiameterParam == null)
+                                continue;
+
                             double innerDiameterMm =
                             UnitUtils.ConvertFromInternalUnits(
-                            pipe.get_Parameter(
-                            BuiltInParameter.RBS_PIPE_INNER_DIAM_PARAM).AsDouble(),
+                            innerDiameterParam.AsDouble(),
                             UnitTypeId.Millimeters);
 
                             double wallThicknessMm =
@@ -91,6 +98,7 @@ namespace Fill_ADSK_Parameters
                             $"{typeComment} dn{Math.Round(outerDiameterMm)}x{Math.Round(wallThicknessMm, 1)}";
 
                             nameParam.Set(newName);
+                            nameUpdated++;
 
                         }
 
@@ -108,6 +116,19 @@ namespace Fill_ADSK_Parameters
 
             }
 
+            string msg =
+            $"ADSK_Количество обновлено: {quantityUpdated}\nADSK_Наименование обновлено: {nameUpdated}";
+
+            if (errors.Length > 0)
+                TaskDialog.Show("Готово с ошибками", msg + "\n\n" + errors.ToString());
+            else
+                TaskDialog.Show("Готово", msg);
+
+        }
+
+        public static void pipesLenght(Document doc)
+        {
+            FillPipesLength(doc);
         }
 
         public static void FillPipeInsulationADSK(Document doc)
@@ -118,6 +139,7 @@ namespace Fill_ADSK_Parameters
             .OfClass(typeof(PipeInsulation));
 
             int updated = 0;
+            StringBuilder errors = new StringBuilder();
 
             using (Transaction t =
             new Transaction(doc, "Заполнение ADSK параметров для изоляции"))
@@ -144,16 +166,18 @@ namespace Fill_ADSK_Parameters
                         Math.Round(lengthMeters * 1.1, 2);
 
                         Parameter qParam =
-                        ins.LookupParameter("ADSK_Количество");
+                        ins.LookupParameter(HelperFunctions.AdskQuantity);
 
                         if (qParam != null && !qParam.IsReadOnly)
+                        {
                             qParam.Set(withReserve);
-
-                        updated++;
+                            updated++;
+                        }
 
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        errors.AppendLine($"Элемент {ins.Id}: {ex.Message}");
                     }
 
                 }
@@ -162,7 +186,12 @@ namespace Fill_ADSK_Parameters
 
             }
 
-            TaskDialog.Show("Готово", $"Обновлено изоляций: {updated}");
+            string msg = $"Обновлено изоляций: {updated}";
+
+            if (errors.Length > 0)
+                TaskDialog.Show("Готово с ошибками", msg + "\n\n" + errors.ToString());
+            else
+                TaskDialog.Show("Готово", msg);
 
         }
 

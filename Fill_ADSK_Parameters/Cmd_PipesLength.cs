@@ -18,7 +18,7 @@ namespace Fill_ADSK_Parameters
             Document doc =
             commandData.Application.ActiveUIDocument.Document;
 
-            PipeFunctions.pipesLenght(doc);
+            PipeFunctions.FillPipesLength(doc);
 
             return Result.Succeeded;
 
