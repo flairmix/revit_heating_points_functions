@@ -138,7 +138,8 @@ namespace Fill_ADSK_Parameters
             new FilteredElementCollector(doc)
             .OfClass(typeof(PipeInsulation));
 
-            int updated = 0;
+            int quantityUpdated = 0;
+            int nameUpdated = 0;
             StringBuilder errors = new StringBuilder();
 
             using (Transaction t =
@@ -162,16 +163,29 @@ namespace Fill_ADSK_Parameters
                         lengthInternal,
                         UnitTypeId.Meters);
 
-                        double withReserve =
-                        Math.Round(lengthMeters * 1.1, 2);
-
                         Parameter qParam =
                         ins.LookupParameter(HelperFunctions.AdskQuantity);
 
                         if (qParam != null && !qParam.IsReadOnly)
                         {
-                            qParam.Set(withReserve);
-                            updated++;
+                            qParam.Set(Math.Round(lengthMeters, 2));
+                            quantityUpdated++;
+                        }
+
+                        Parameter nameParam =
+                        ins.LookupParameter(HelperFunctions.AdskName);
+
+                        if (nameParam != null && !nameParam.IsReadOnly)
+                        {
+                            string typeComment =
+                            GetTypeComment(doc, ins);
+
+                            if (!string.IsNullOrEmpty(typeComment) &&
+                            TryGetHostPipeDiameterText(doc, ins, out string diameterText))
+                            {
+                                nameParam.Set($"{typeComment} для труб Ø{diameterText}");
+                                nameUpdated++;
+                            }
                         }
 
                     }
@@ -186,13 +200,72 @@ namespace Fill_ADSK_Parameters
 
             }
 
-            string msg = $"Обновлено изоляций: {updated}";
+            string msg =
+            $"ADSK_Количество обновлено: {quantityUpdated}\nADSK_Наименование обновлено: {nameUpdated}";
 
             if (errors.Length > 0)
                 TaskDialog.Show("Готово с ошибками", msg + "\n\n" + errors.ToString());
             else
                 TaskDialog.Show("Готово", msg);
 
+        }
+
+        private static string GetTypeComment(Document doc, Element el)
+        {
+            ElementType type =
+            doc.GetElement(el.GetTypeId()) as ElementType;
+
+            if (type == null)
+                return "";
+
+            Parameter typeCommentsParam =
+            type.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
+
+            if (typeCommentsParam == null)
+                return "";
+
+            return typeCommentsParam.AsString() ?? "";
+        }
+
+        private static bool TryGetHostPipeDiameterText(
+            Document doc,
+            PipeInsulation ins,
+            out string diameterText)
+        {
+            diameterText = "";
+
+            Element host =
+            doc.GetElement(ins.HostElementId);
+
+            if (host == null)
+                return false;
+
+            Parameter diameterParam =
+            host.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM);
+
+            if (diameterParam == null || !diameterParam.HasValue)
+            {
+                diameterParam =
+                host.get_Parameter(BuiltInParameter.RBS_PIPE_OUTER_DIAMETER);
+            }
+
+            if (diameterParam == null || !diameterParam.HasValue)
+                return false;
+
+            double diameterMm =
+            UnitUtils.ConvertFromInternalUnits(
+            diameterParam.AsDouble(),
+            UnitTypeId.Millimeters);
+
+            double roundedDiameter =
+            Math.Round(diameterMm, 1);
+
+            if (Math.Abs(roundedDiameter - Math.Round(roundedDiameter)) < 0.001)
+                diameterText = Math.Round(roundedDiameter).ToString("0");
+            else
+                diameterText = roundedDiameter.ToString("0.#");
+
+            return true;
         }
 
     }
