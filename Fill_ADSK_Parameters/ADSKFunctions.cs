@@ -38,6 +38,7 @@ namespace Fill_ADSK_Parameters
         private static readonly Dictionary<string, int> PositionRules =
         new Dictionary<string, int>
         {
+            { "Теплообменник", 1 },
             { "Насос циркуляционный", 2 },
             { "Насос", 2 },
             { "Клапан предохранительный", 3 },
@@ -77,6 +78,7 @@ namespace Fill_ADSK_Parameters
             { "Шаровый кран", 18 },
             { "Шаровой кран", 18 },
             { "Кран шаровой", 18 },
+            { "кран шаровой", 18 },
             { "Кран шаровый", 18 },
             { "Затвор дисковый", 19 },
             { "Затворы", 19 },
