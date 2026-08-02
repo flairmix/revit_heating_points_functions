@@ -20,6 +20,7 @@ namespace Fill_ADSK_Parameters
             StringBuilder errors = new StringBuilder();
             int quantityUpdated = 0;
             int nameUpdated = 0;
+            int namePreserved = 0;
 
             using (Transaction t =
             new Transaction(doc, "Заполнение ADSK параметров для труб"))
@@ -59,6 +60,11 @@ namespace Fill_ADSK_Parameters
 
                         if (nameParam != null && !nameParam.IsReadOnly)
                         {
+                            if (!string.IsNullOrWhiteSpace(nameParam.AsString()))
+                            {
+                                namePreserved++;
+                                continue;
+                            }
 
                             PipeType pipeType =
                             doc.GetElement(pipe.GetTypeId()) as PipeType;
@@ -117,18 +123,13 @@ namespace Fill_ADSK_Parameters
             }
 
             string msg =
-            $"ADSK_Количество обновлено: {quantityUpdated}\nADSK_Наименование обновлено: {nameUpdated}";
+            $"ADSK_Количество обновлено: {quantityUpdated}\nADSK_Наименование заполнено: {nameUpdated}\nADSK_Наименование сохранено: {namePreserved}";
 
             if (errors.Length > 0)
                 TaskDialog.Show("Готово с ошибками", msg + "\n\n" + errors.ToString());
             else
                 TaskDialog.Show("Готово", msg);
 
-        }
-
-        public static void pipesLenght(Document doc)
-        {
-            FillPipesLength(doc);
         }
 
         public static void FillPipeInsulationADSK(Document doc)
@@ -140,6 +141,7 @@ namespace Fill_ADSK_Parameters
 
             int quantityUpdated = 0;
             int nameUpdated = 0;
+            int namePreserved = 0;
             StringBuilder errors = new StringBuilder();
 
             using (Transaction t =
@@ -177,6 +179,12 @@ namespace Fill_ADSK_Parameters
 
                         if (nameParam != null && !nameParam.IsReadOnly)
                         {
+                            if (!string.IsNullOrWhiteSpace(nameParam.AsString()))
+                            {
+                                namePreserved++;
+                                continue;
+                            }
+
                             string typeComment =
                             GetTypeComment(doc, ins);
 
@@ -201,7 +209,7 @@ namespace Fill_ADSK_Parameters
             }
 
             string msg =
-            $"ADSK_Количество обновлено: {quantityUpdated}\nADSK_Наименование обновлено: {nameUpdated}";
+            $"ADSK_Количество обновлено: {quantityUpdated}\nADSK_Наименование заполнено: {nameUpdated}\nADSK_Наименование сохранено: {namePreserved}";
 
             if (errors.Length > 0)
                 TaskDialog.Show("Готово с ошибками", msg + "\n\n" + errors.ToString());

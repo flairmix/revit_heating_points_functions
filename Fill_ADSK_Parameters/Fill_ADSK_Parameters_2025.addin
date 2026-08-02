@@ -37,15 +37,6 @@
   </AddIn>
 
   <AddIn Type="Command">
-    <Name>ADSK Renumber Positions</Name>
-    <Assembly>C:\Users\mid\source\repos\revit_heating_points_functions\Fill_ADSK_Parameters\bin\Release\Fill_ADSK_Parameters.dll</Assembly>
-    <AddInId>346a14bb-6812-4afa-b57e-548a8e390e00</AddInId>
-    <FullClassName>Fill_ADSK_Parameters.Cmd_RenumberPositions</FullClassName>
-    <VendorId>MID</VendorId>
-    <VendorDescription>ADSK parameter tools for Revit 2025</VendorDescription>
-  </AddIn>
-
-  <AddIn Type="Command">
     <Name>ADSK Copy Comments Inside</Name>
     <Assembly>C:\Users\mid\source\repos\revit_heating_points_functions\Fill_ADSK_Parameters\bin\Release\Fill_ADSK_Parameters.dll</Assembly>
     <AddInId>36d4ad38-6b57-4576-830b-f5f5f98ed654</AddInId>

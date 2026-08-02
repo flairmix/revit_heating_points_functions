@@ -42,19 +42,26 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ADSKFunctions.cs" />
+    <Compile Include="AdskCategoryCatalog.cs" />
     <Compile Include="Cmd_ADSKGrouping.cs" />
     <Compile Include="Cmd_ADSKPositionFill.cs" />
     <Compile Include="Cmd_CopyComments.cs" />
     <Compile Include="Cmd_PipeInsulation.cs" />
     <Compile Include="Cmd_PipesLength.cs" />
-    <Compile Include="Cmd_RenumberPositions.cs" />
     <Compile Include="HelperFunctions.cs" />
     <Compile Include="PipeFunctions.cs" />
+    <Compile Include="PositionElementData.cs" />
+    <Compile Include="PositionElementReader.cs" />
+    <Compile Include="PositionRule.cs" />
+    <Compile Include="PositionRuleCatalog.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RevitCommandRunner.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Fill_ADSK_Parameters.addin" />
     <None Include="Fill_ADSK_Parameters_2025.addin" />
+    <Content Include="position_rules.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
