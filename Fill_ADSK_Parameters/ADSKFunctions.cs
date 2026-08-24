@@ -50,21 +50,23 @@ namespace Fill_ADSK_Parameters
 
         public static void FillAdskPosition(Document doc)
         {
-            FillBasePositions(doc);
+            FillAndRenumberPositions(doc);
 
         }
 
-        public static void FillBasePositions(Document doc)
+        public static void FillAndRenumberPositions(Document doc)
         {
             List<PositionElementData> items =
             PositionElementReader.GetPositionElementData(doc).ToList();
 
+            Dictionary<PositionElementData, string> basePositions =
+            new Dictionary<PositionElementData, string>();
+
             int matched = 0;
             int updated = 0;
-            int preserved = 0;
 
             using (Transaction t =
-            new Transaction(doc, "Заполнение базовой ADSK Позиция"))
+            new Transaction(doc, "Заполнение и перенумерация ADSK Позиция"))
             {
 
                 t.Start();
@@ -77,20 +79,52 @@ namespace Fill_ADSK_Parameters
                     if (posParam == null || posParam.IsReadOnly)
                         continue;
 
-                    if (!string.IsNullOrWhiteSpace(posParam.AsString()))
-                    {
-                        preserved++;
-                        continue;
-                    }
-
                     string name =
                     item.SearchText;
 
                     if (PositionRuleCatalog.TryGetBasePosition(name, out string basePosition))
                     {
-                        posParam.Set(basePosition);
+                        basePositions[item] = basePosition;
                         matched++;
-                        updated++;
+                    }
+                }
+
+                foreach (IGrouping<string, KeyValuePair<PositionElementData, string>> positionGroup
+                in basePositions
+                .GroupBy(x => x.Value)
+                .OrderBy(x => int.Parse(x.Key)))
+                {
+                    string basePosition =
+                    positionGroup.Key;
+
+                    List<IGrouping<string, KeyValuePair<PositionElementData, string>>> variants =
+                    positionGroup
+                    .GroupBy(x => GetPositionVariantKey(x.Key), StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(x => x.Min(y => y.Key.SortId))
+                    .ToList();
+
+                    int index = 1;
+
+                    foreach (IGrouping<string, KeyValuePair<PositionElementData, string>> variant in variants)
+                    {
+                        string position =
+                        $"{basePosition}.{index}";
+
+                        foreach (KeyValuePair<PositionElementData, string> entry in variant)
+                        {
+                            Parameter posParam =
+                            entry.Key.PositionParameter;
+
+                            if (posParam != null &&
+                            !posParam.IsReadOnly &&
+                            !string.Equals(posParam.AsString(), position, StringComparison.Ordinal))
+                            {
+                                posParam.Set(position);
+                                updated++;
+                            }
+                        }
+
+                        index++;
                     }
                 }
 
@@ -99,8 +133,14 @@ namespace Fill_ADSK_Parameters
             }
 
             TaskDialog.Show("Готово",
-            $"Правил позиций загружено: {PositionRuleCatalog.RuleCount}\nCSV: {PositionRuleCatalog.SourcePath}\nСохранено существующих ADSK_Позиция: {preserved}\nПодобрано базовых позиций: {matched}\nЗаполнено ADSK_Позиция: {updated}");
+            $"Правил позиций загружено: {PositionRuleCatalog.RuleCount}\nCSV: {PositionRuleCatalog.SourcePath}\nПодобрано элементов: {matched}\nЗаполнено или перенумеровано ADSK_Позиция: {updated}");
 
+        }
+
+        private static string GetPositionVariantKey(PositionElementData item)
+        {
+            return (item.GroupName ?? "").Trim() + "\u001f" +
+            (item.Mark ?? "").Trim();
         }
 
         public static void CopyCommentsToNestedFamilies(Document doc)
